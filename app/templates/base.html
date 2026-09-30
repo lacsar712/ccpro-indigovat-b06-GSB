@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}染缸还原台{% endblock %} · IndigoVat</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    :root {
+      --ink: #0b1c2c;
+      --indigo-deep: #12324a;
+      --indigo-mid: #1f4d6b;
+      --indigo-wash: #2a6a8a;
+      --foam: #d8ebe8;
+      --mist: #e8f2f0;
+      --paper: #f4f8f7;
+      --accent: #3d8b9c;
+      --ready: #1a7a5c;
+      --reducing: #2f6f9a;
+      --idle: #6b7c85;
+      --pico-font-family: "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+      --pico-primary: var(--indigo-mid);
+      --pico-primary-background: var(--indigo-mid);
+      --pico-primary-hover: var(--indigo-deep);
+      --pico-background-color: transparent;
+      --pico-card-background-color: rgba(244, 248, 247, 0.92);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 90% 60% at 10% -10%, rgba(47, 111, 154, 0.28), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 95% 5%, rgba(26, 122, 92, 0.12), transparent 50%),
+        linear-gradient(165deg, #0e2436 0%, #16364c 28%, #1a4558 52%, #245569 78%, #2d6574 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      background-image:
+        repeating-linear-gradient(
+          105deg,
+          transparent 0 18px,
+          rgba(216, 235, 232, 0.04) 18px 19px
+        );
+    }
+    [x-cloak] { display: none !important; }
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1.25rem 1.1rem 2.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .mast {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.35rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgba(216, 235, 232, 0.22);
+    }
+    .mast h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 2.6vw, 2rem);
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      color: var(--foam);
+      text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+    }
+    .mast .sub {
+      margin: 0.35rem 0 0;
+      color: rgba(216, 235, 232, 0.72);
+      font-size: 0.92rem;
+    }
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: var(--foam);
+      font-size: 0.9rem;
+    }
+    .user-pill button {
+      width: auto;
+      margin: 0;
+      padding: 0.28rem 0.75rem;
+      font-size: 0.82rem;
+      background: transparent;
+      border: 1px solid rgba(216, 235, 232, 0.45);
+      color: var(--foam);
+    }
+    .user-pill button:hover {
+      background: rgba(216, 235, 232, 0.12);
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 1.1rem;
+    }
+    .chip {
+      appearance: none;
+      border: 1px solid rgba(216, 235, 232, 0.35);
+      background: rgba(11, 28, 44, 0.35);
+      color: var(--foam);
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .chip:hover { border-color: rgba(216, 235, 232, 0.7); }
+    .chip.on {
+      background: linear-gradient(135deg, rgba(61, 139, 156, 0.85), rgba(31, 77, 107, 0.95));
+      border-color: rgba(216, 235, 232, 0.65);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    .bay-scroll {
+      display: flex;
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding: 0.35rem 0.15rem 1rem;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .bay-scroll::-webkit-scrollbar { height: 6px; }
+    .bay-scroll::-webkit-scrollbar-thumb {
+      background: rgba(216, 235, 232, 0.35);
+      border-radius: 3px;
+    }
+    .vat-card {
+      flex: 0 0 168px;
+      scroll-snap-align: start;
+      border: 1px solid rgba(216, 235, 232, 0.28);
+      border-radius: 14px 14px 18px 18px;
+      padding: 0.85rem 0.8rem 0.75rem;
+      background:
+        linear-gradient(180deg, rgba(42, 106, 138, 0.55) 0%, rgba(18, 50, 74, 0.88) 100%);
+      color: var(--foam);
+      cursor: pointer;
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(8, 20, 32, 0.35);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .vat-card::after {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 0;
+      height: 4px;
+      border-radius: 4px 4px 0 0;
+      background: rgba(216, 235, 232, 0.25);
+    }
+    .vat-card:hover { transform: translateY(-3px); border-color: rgba(216, 235, 232, 0.55); }
+    .vat-card.selected {
+      border-color: #9fd4c8;
+      box-shadow: 0 0 0 2px rgba(159, 212, 200, 0.45), 0 10px 28px rgba(8, 20, 32, 0.4);
+    }
+    .vat-card .code {
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      font-size: 1.05rem;
+    }
+    .vat-card .meta {
+      font-size: 0.75rem;
+      opacity: 0.78;
+      margin: 0.2rem 0 0.55rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .vat-card .mv {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+    }
+    .vat-card .mv.empty { opacity: 0.55; font-size: 0.82rem; }
+    .status-dot {
+      display: inline-block;
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      margin-right: 0.35rem;
+      vertical-align: middle;
+    }
+    .st-idle .status-dot { background: var(--idle); }
+    .st-reducing .status-dot { background: #7eb8d8; box-shadow: 0 0 8px rgba(126, 184, 216, 0.7); }
+    .st-ready .status-dot { background: #5dcea8; box-shadow: 0 0 8px rgba(93, 206, 168, 0.65); }
+    .status-label { font-size: 0.78rem; opacity: 0.9; }
+    .spark { display: block; margin-top: 0.25rem; opacity: 0.9; }
+    .panel {
+      background: linear-gradient(165deg, rgba(244, 248, 247, 0.97), rgba(232, 242, 240, 0.94));
+      border: 1px solid rgba(31, 77, 107, 0.18);
+      border-radius: 16px;
+      padding: 1.15rem 1.25rem 1.35rem;
+      box-shadow: 0 12px 36px rgba(8, 20, 32, 0.28);
+      color: var(--ink);
+    }
+    .panel h2 {
+      margin: 0 0 0.25rem;
+      font-size: 1.25rem;
+      color: var(--indigo-deep);
+    }
+    .panel .hint { color: #4a6670; font-size: 0.88rem; margin: 0 0 1rem; }
+    .panel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 780px) {
+      .panel-grid { grid-template-columns: 1fr; }
+    }
+    .panel label { font-size: 0.88rem; color: #2a4554; }
+    .panel input, .panel select {
+      background: #fff;
+      border-color: #b7cdd0;
+    }
+    .panel button[type="submit"] {
+      width: auto;
+      background: var(--indigo-mid);
+      border-color: var(--indigo-mid);
+    }
+    .lot-list {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0;
+      font-size: 0.86rem;
+    }
+    .lot-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px dashed #c5d8d6;
+      color: #35505a;
+    }
+    .empty-bay {
+      color: rgba(216, 235, 232, 0.75);
+      padding: 1.5rem 0.5rem;
+      text-align: center;
+    }
+    .error-box {
+      background: #fde8e8;
+      color: #8b1e1e;
+      border: 1px solid #f0b4b4;
+      padding: 0.7rem 0.95rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      font-size: 0.92rem;
+    }
+    .login-wrap {
+      max-width: 400px;
+      margin: 4rem auto;
+    }
+    .login-wrap h1 {
+      color: var(--foam);
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    .login-wrap .muted { color: rgba(216, 235, 232, 0.7); margin-bottom: 1.25rem; }
+    .login-wrap article {
+      background: linear-gradient(165deg, rgba(244, 248, 247, 0.97), rgba(232, 242, 240, 0.94));
+      border-radius: 16px;
+      padding: 1.35rem 1.4rem;
+      border: 1px solid rgba(216, 235, 232, 0.35);
+    }
+    .rule-foot {
+      margin-top: 1rem;
+      font-size: 0.82rem;
+      color: rgba(216, 235, 232, 0.62);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    {% if user %}
+    <header class="mast">
+      <div>
+        <h1>染缸还原台</h1>
+        <p class="sub">IndigoVat · 按缸位盯氧化还原，点开记浸染与改状态</p>
+      </div>
+      <div class="user-pill">
+        <span>{{ user.username }}</span>
+        <form method="post" action="/logout">
+          <button type="submit">退出</button>
+        </form>
+      </div>
+    </header>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

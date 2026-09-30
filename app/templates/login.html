@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}登录{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <h1>染缸还原台</h1>
+  <p class="muted">登录后进入缸位条，登记浸染与盯电位</p>
+  <article>
+    {% if error %}
+    <div class="error-box">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/login">
+      <label>
+        用户名
+        <input type="text" name="username" value="admin" autocomplete="username" autofocus required>
+      </label>
+      <label>
+        密码
+        <input type="password" name="password" value="123456" autocomplete="current-password" required>
+      </label>
+      <button type="submit">进入还原台</button>
+    </form>
+    <p style="margin:0.85rem 0 0;font-size:0.85rem;color:#4a6670">演示账号：admin / worker，密码均为 123456</p>
+  </article>
+</div>
+{% endblock %}

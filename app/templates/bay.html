@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}染缸还原台{% endblock %}
+{% block content %}
+<div
+  x-data="vatBay()"
+  x-init="init()"
+>
+  <div class="chips" role="toolbar" aria-label="工坊筛选">
+    <button type="button" class="chip" :class="{ on: filterWs === null }" @click="setFilter(null)">全部缸位</button>
+    <template x-for="w in workshops" :key="w.id">
+      <button
+        type="button"
+        class="chip"
+        :class="{ on: filterWs === w.id }"
+        @click="setFilter(w.id)"
+        x-text="w.name"
+      ></button>
+    </template>
+  </div>
+
+  {% if error %}
+  <div class="error-box">{{ error }}</div>
+  {% endif %}
+
+  <div class="bay-scroll" role="list">
+    <template x-for="v in filteredVats()" :key="v.id">
+      <button
+        type="button"
+        class="vat-card"
+        :class="['st-' + v.status, { selected: selectedId === v.id }]"
+        role="listitem"
+        @click="toggle(v.id)"
+      >
+        <div class="code" x-text="v.code"></div>
+        <div class="meta" x-text="v.workshopName + ' · ' + v.dyeType"></div>
+        <div class="status-label">
+          <span class="status-dot"></span>
+          <span x-text="v.statusLabel"></span>
+        </div>
+        <svg class="spark" width="72" height="28" viewBox="0 0 72 28" aria-hidden="true">
+          <polyline
+            x-show="v.spark.length"
+            fill="none"
+            stroke="#9fd4c8"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+            :points="v.spark.map(p => p.x + ',' + p.y).join(' ')"
+          ></polyline>
+          <line
+            x-show="!v.spark.length"
+            x1="4" y1="14" x2="68" y2="14"
+            stroke="rgba(216,235,232,0.35)"
+            stroke-width="1"
+            stroke-dasharray="3 3"
+          ></line>
+        </svg>
+        <div class="mv" :class="{ empty: v.lastRedox === null }">
+          <template x-if="v.lastRedox !== null">
+            <span x-text="v.lastRedox + ' mV'"></span>
+          </template>
+          <template x-if="v.lastRedox === null">
+            <span>尚无电位</span>
+          </template>
+        </div>
+      </button>
+    </template>
+  </div>
+  <p class="empty-bay" x-show="filteredVats().length === 0" x-cloak>此工坊暂无染缸。</p>
+
+  <div class="panel" x-show="selected()" x-cloak x-transition>
+    <template x-if="selected()">
+      <div>
+        <h2>
+          <span x-text="selected().code"></span>
+          <span style="font-weight:500;font-size:0.9rem;color:#4a6670;margin-left:0.4rem"
+                x-text="selected().workshopName + ' · ' + selected().volumeL + ' L'"></span>
+        </h2>
+        <p class="hint">当前 <strong x-text="selected().statusLabel"></strong>
+          · 最近浸染 <span x-text="selected().lastDippedAt || '—'"></span>
+          · 设为可染色须最新批次电位 ≤ -500 mV</p>
+
+        <div class="panel-grid">
+          <div>
+            <h3 style="font-size:1rem;margin:0 0 0.65rem;color:#1f4d6b">登记浸染</h3>
+            <form method="post" :action="'/bay/vats/' + selected().id + '/lots'">
+              <input type="hidden" name="workshop" :value="filterWs || ''">
+              <label>浸染时间
+                <input type="datetime-local" name="dippedAt" required :value="nowLocal()">
+              </label>
+              <label>布料米数
+                <input type="number" name="clothMeters" step="0.01" min="0.01" required placeholder="例如 24.5">
+              </label>
+              <label>氧化还原电位 (mV，可空)
+                <input type="number" name="redoxMv" step="0.01" placeholder="例如 -520">
+              </label>
+              <button type="submit">写入本缸</button>
+            </form>
+          </div>
+          <div>
+            <h3 style="font-size:1rem;margin:0 0 0.65rem;color:#1f4d6b">改缸状态</h3>
+            <form method="post" :action="'/bay/vats/' + selected().id + '/status'">
+              <input type="hidden" name="workshop" :value="filterWs || ''">
+              <label>目标状态
+                <select name="status" required :value="selected().status">
+                  <option value="idle">闲置</option>
+                  <option value="reducing">还原中</option>
+                  <option value="ready">可染色</option>
+                </select>
+              </label>
+              <button type="submit">更新状态</button>
+            </form>
+            <h3 style="font-size:0.95rem;margin:1.25rem 0 0.4rem;color:#1f4d6b">近几笔浸染</h3>
+            <ul class="lot-list">
+              <template x-for="l in selected().recentLots" :key="l.id">
+                <li>
+                  <span x-text="l.dippedAt"></span>
+                  <span>
+                    <span x-text="l.clothMeters + ' m'"></span>
+                    ·
+                    <span x-text="l.redoxMv === null ? '无电位' : (l.redoxMv + ' mV')"></span>
+                  </span>
+                </li>
+              </template>
+              <li x-show="!selected().recentLots.length" style="border:0;color:#6b7c85">尚无记录</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <p class="rule-foot">工坊只作缸位筛选片；浸染与状态均在缸位展开区内完成，无独立表页。</p>
+</div>
+
+<script>
+  function vatBay() {
+    return {
+      workshops: {{ workshops | tojson }},
+      vats: {{ vats | tojson }},
+      filterWs: {{ filter_workshop if filter_workshop is not none else 'null' }},
+      selectedId: {{ selected_vat if selected_vat is not none else 'null' }},
+      init() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('workshop') && this.filterWs === null) {
+          const w = parseInt(params.get('workshop'), 10);
+          if (!isNaN(w)) this.filterWs = w;
+        }
+        if (params.has('vat') && this.selectedId === null) {
+          const v = parseInt(params.get('vat'), 10);
+          if (!isNaN(v)) this.selectedId = v;
+        }
+      },
+      setFilter(id) {
+        this.filterWs = id;
+        const still = this.filteredVats().some(v => v.id === this.selectedId);
+        if (!still) this.selectedId = null;
+        const url = new URL(window.location.href);
+        if (id === null) url.searchParams.delete('workshop');
+        else url.searchParams.set('workshop', id);
+        if (this.selectedId) url.searchParams.set('vat', this.selectedId);
+        else url.searchParams.delete('vat');
+        history.replaceState(null, '', url.pathname + url.search);
+      },
+      filteredVats() {
+        if (this.filterWs === null) return this.vats;
+        return this.vats.filter(v => v.workshopId === this.filterWs);
+      },
+      toggle(id) {
+        this.selectedId = this.selectedId === id ? null : id;
+        const url = new URL(window.location.href);
+        if (this.selectedId) url.searchParams.set('vat', this.selectedId);
+        else url.searchParams.delete('vat');
+        if (this.filterWs !== null) url.searchParams.set('workshop', this.filterWs);
+        history.replaceState(null, '', url.pathname + url.search);
+      },
+      selected() {
+        return this.vats.find(v => v.id === this.selectedId) || null;
+      },
+      nowLocal() {
+        const d = new Date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 16);
+      },
+    };
+  }
+</script>
+{% endblock %}
