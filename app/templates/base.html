@@ -100,11 +100,41 @@
     .user-pill button:hover {
       background: rgba(216, 235, 232, 0.12);
     }
+    .stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .stat {
+      background: rgba(11, 28, 44, 0.35);
+      border: 1px solid rgba(216, 235, 232, 0.28);
+      border-radius: 12px;
+      padding: 0.45rem 0.95rem 0.5rem;
+      min-width: 6.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.05rem;
+    }
+    .stat-num {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--foam);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+    .stat-lbl {
+      font-size: 0.75rem;
+      color: rgba(216, 235, 232, 0.68);
+      letter-spacing: 0.04em;
+    }
+    .filter-rows { margin-bottom: 1.1rem; }
+    .filter-rows .chips:last-child { margin-bottom: 0; }
     .chips {
       display: flex;
       flex-wrap: wrap;
       gap: 0.45rem;
-      margin-bottom: 1.1rem;
+      margin-bottom: 0.5rem;
     }
     .chip {
       appearance: none;
@@ -250,6 +280,7 @@
       padding: 1.5rem 0.5rem;
       text-align: center;
     }
+    .bay-scroll .empty-bay { flex: 1 1 100%; margin: 0; }
     .error-box {
       background: #fde8e8;
       color: #8b1e1e;

@@ -1,0 +1,46 @@
+{# 缸位条片段：整页（bay.html include）与局部刷新（GET /bay/vats）共用，保证同筛同集合 #}
+{% for v in visible_vats %}
+<button
+  type="button"
+  class="vat-card st-{{ v.status }}"
+  :class="{ selected: selectedId === {{ v.id }} }"
+  role="listitem"
+  data-vat-id="{{ v.id }}"
+  @click="toggle({{ v.id }})"
+>
+  <div class="code">{{ v.code }}</div>
+  <div class="meta">{{ v.workshopName }} · {{ v.dyeType }}</div>
+  <div class="status-label">
+    <span class="status-dot"></span>
+    <span>{{ v.statusLabel }}</span>
+  </div>
+  <svg class="spark" width="72" height="28" viewBox="0 0 72 28" aria-hidden="true">
+    {% if v.sparkLine %}
+    <polyline
+      fill="none"
+      stroke="#9fd4c8"
+      stroke-width="1.6"
+      stroke-linejoin="round"
+      stroke-linecap="round"
+      points="{{ v.sparkLine }}"
+    ></polyline>
+    {% else %}
+    <line
+      x1="4" y1="14" x2="68" y2="14"
+      stroke="rgba(216,235,232,0.35)"
+      stroke-width="1"
+      stroke-dasharray="3 3"
+    ></line>
+    {% endif %}
+  </svg>
+  <div class="mv{% if v.lastRedoxText is none %} empty{% endif %}">
+    {% if v.lastRedoxText is none %}
+    <span>尚无电位</span>
+    {% else %}
+    <span>{{ v.lastRedoxText }}</span>
+    {% endif %}
+  </div>
+</button>
+{% else %}
+<p class="empty-bay">没有符合筛选条件的染缸。</p>
+{% endfor %}

@@ -36,8 +36,9 @@ docker compose up --build -d
 ## 交互（信息架构）
 
 1. **染缸还原台**：横滑缸位条，每缸显示状态、最近电位与 redox sparkline
-2. **工坊 chip**：仅作缸位筛选，无独立工坊 CRUD 页
-3. **点缸展开**：同页内登记浸染批次、改状态、看近几笔；无平行「染缸表 / 批次表」
+2. **对账四项**：全库缸数 / 还原中 / 可染色 / 当日浸染，始终按无筛全库口径复算，不随筛选变化
+3. **筛选**：工坊 / 染种（精确匹配）/ 状态 三组 chip，只改可见缸位；整页加载与缸位条局部刷新（`GET /bay/vats`）共用同一筛选与模板，同筛必同集合
+4. **点缸展开**：同页内登记浸染批次、改状态、看近几笔；无平行「染缸表 / 批次表」
 
 **业务规则**：状态改为 `ready`（可染色）时，最新批次 `redoxMv` 须已填且 ≤ -500（见 `vat_rules.py`）。
 
@@ -75,5 +76,5 @@ IndigoVat-01/
     seed.py
     routers/
     services/vat_rules.py
-    templates/   # base / bay / login
+    templates/   # base / bay / _vat_strip / login
 ```

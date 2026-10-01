@@ -115,6 +115,7 @@ def ensure_seed_data(db: Session) -> None:
             [
                 (6, "8.00", None),
                 (1, "12.00", None),
+                (0, "5.00", None),  # 当日必有一笔，保证「当日浸染」非零
             ],
         )
     )

@@ -5,68 +5,65 @@
   x-data="vatBay()"
   x-init="init()"
 >
-  <div class="chips" role="toolbar" aria-label="工坊筛选">
-    <button type="button" class="chip" :class="{ on: filterWs === null }" @click="setFilter(null)">全部缸位</button>
-    <template x-for="w in workshops" :key="w.id">
-      <button
-        type="button"
-        class="chip"
-        :class="{ on: filterWs === w.id }"
-        @click="setFilter(w.id)"
-        x-text="w.name"
-      ></button>
-    </template>
+  <div class="stats-bar" role="status" aria-label="全库对账（不随筛选变化）">
+    <div class="stat" data-stat="total">
+      <span class="stat-num">{{ stats.total }}</span>
+      <span class="stat-lbl">全库缸数</span>
+    </div>
+    <div class="stat" data-stat="reducing">
+      <span class="stat-num">{{ stats.reducing }}</span>
+      <span class="stat-lbl">还原中</span>
+    </div>
+    <div class="stat" data-stat="ready">
+      <span class="stat-num">{{ stats.ready }}</span>
+      <span class="stat-lbl">可染色</span>
+    </div>
+    <div class="stat" data-stat="today-lots">
+      <span class="stat-num">{{ stats.today_lots }}</span>
+      <span class="stat-lbl">当日浸染</span>
+    </div>
+  </div>
+
+  <div class="filter-rows">
+    <div class="chips" role="toolbar" aria-label="工坊筛选">
+      <button type="button" class="chip" :class="{ on: filterWs === null }" @click="setFilter('ws', null)">全部工坊</button>
+      <template x-for="w in workshops" :key="w.id">
+        <button
+          type="button"
+          class="chip"
+          :class="{ on: filterWs === w.id }"
+          @click="setFilter('ws', w.id)"
+          x-text="w.name"
+        ></button>
+      </template>
+    </div>
+    <div class="chips" role="toolbar" aria-label="染种筛选（精确）">
+      <button type="button" class="chip" :class="{ on: filterDye === null }" @click="setFilter('dye', null)">全部染种</button>
+      <template x-for="d in dyeOptions" :key="d">
+        <button
+          type="button"
+          class="chip"
+          :class="{ on: filterDye === d }"
+          @click="setFilter('dye', d)"
+          x-text="d"
+        ></button>
+      </template>
+    </div>
+    <div class="chips" role="toolbar" aria-label="状态筛选">
+      <button type="button" class="chip" :class="{ on: filterStatus === null }" @click="setFilter('status', null)">全部状态</button>
+      <button type="button" class="chip" :class="{ on: filterStatus === 'idle' }" @click="setFilter('status', 'idle')">闲置</button>
+      <button type="button" class="chip" :class="{ on: filterStatus === 'reducing' }" @click="setFilter('status', 'reducing')">还原中</button>
+      <button type="button" class="chip" :class="{ on: filterStatus === 'ready' }" @click="setFilter('status', 'ready')">可染色</button>
+    </div>
   </div>
 
   {% if error %}
   <div class="error-box">{{ error }}</div>
   {% endif %}
 
-  <div class="bay-scroll" role="list">
-    <template x-for="v in filteredVats()" :key="v.id">
-      <button
-        type="button"
-        class="vat-card"
-        :class="['st-' + v.status, { selected: selectedId === v.id }]"
-        role="listitem"
-        @click="toggle(v.id)"
-      >
-        <div class="code" x-text="v.code"></div>
-        <div class="meta" x-text="v.workshopName + ' · ' + v.dyeType"></div>
-        <div class="status-label">
-          <span class="status-dot"></span>
-          <span x-text="v.statusLabel"></span>
-        </div>
-        <svg class="spark" width="72" height="28" viewBox="0 0 72 28" aria-hidden="true">
-          <polyline
-            x-show="v.spark.length"
-            fill="none"
-            stroke="#9fd4c8"
-            stroke-width="1.6"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            :points="v.spark.map(p => p.x + ',' + p.y).join(' ')"
-          ></polyline>
-          <line
-            x-show="!v.spark.length"
-            x1="4" y1="14" x2="68" y2="14"
-            stroke="rgba(216,235,232,0.35)"
-            stroke-width="1"
-            stroke-dasharray="3 3"
-          ></line>
-        </svg>
-        <div class="mv" :class="{ empty: v.lastRedox === null }">
-          <template x-if="v.lastRedox !== null">
-            <span x-text="v.lastRedox + ' mV'"></span>
-          </template>
-          <template x-if="v.lastRedox === null">
-            <span>尚无电位</span>
-          </template>
-        </div>
-      </button>
-    </template>
+  <div class="bay-scroll" id="vat-strip" role="list">
+    {% include "_vat_strip.html" %}
   </div>
-  <p class="empty-bay" x-show="filteredVats().length === 0" x-cloak>此工坊暂无染缸。</p>
 
   <div class="panel" x-show="selected()" x-cloak x-transition>
     <template x-if="selected()">
@@ -84,7 +81,9 @@
           <div>
             <h3 style="font-size:1rem;margin:0 0 0.65rem;color:#1f4d6b">登记浸染</h3>
             <form method="post" :action="'/bay/vats/' + selected().id + '/lots'">
-              <input type="hidden" name="workshop" :value="filterWs || ''">
+              <input type="hidden" name="workshop" :value="filterWs === null ? '' : filterWs">
+              <input type="hidden" name="filter_dye" :value="filterDye || ''">
+              <input type="hidden" name="filter_status" :value="filterStatus || ''">
               <label>浸染时间
                 <input type="datetime-local" name="dippedAt" required :value="nowLocal()">
               </label>
@@ -100,7 +99,9 @@
           <div>
             <h3 style="font-size:1rem;margin:0 0 0.65rem;color:#1f4d6b">改缸状态</h3>
             <form method="post" :action="'/bay/vats/' + selected().id + '/status'">
-              <input type="hidden" name="workshop" :value="filterWs || ''">
+              <input type="hidden" name="workshop" :value="filterWs === null ? '' : filterWs">
+              <input type="hidden" name="filter_dye" :value="filterDye || ''">
+              <input type="hidden" name="filter_status" :value="filterStatus || ''">
               <label>目标状态
                 <select name="status" required :value="selected().status">
                   <option value="idle">闲置</option>
@@ -130,7 +131,7 @@
     </template>
   </div>
 
-  <p class="rule-foot">工坊只作缸位筛选片；浸染与状态均在缸位展开区内完成，无独立表页。</p>
+  <p class="rule-foot">筛选只改可见缸位；对账四项始终按全库口径复算。浸染与改状态均在缸位展开区内完成，无独立表页。</p>
 </div>
 
 <script>
@@ -138,41 +139,63 @@
     return {
       workshops: {{ workshops | tojson }},
       vats: {{ vats | tojson }},
-      filterWs: {{ filter_workshop if filter_workshop is not none else 'null' }},
-      selectedId: {{ selected_vat if selected_vat is not none else 'null' }},
+      dyeOptions: {{ dye_options | tojson }},
+      filterWs: {{ filter_workshop | tojson }},
+      filterDye: {{ filter_dye | tojson }},
+      filterStatus: {{ filter_status | tojson }},
+      selectedId: {{ selected_vat | tojson }},
       init() {
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('workshop') && this.filterWs === null) {
-          const w = parseInt(params.get('workshop'), 10);
-          if (!isNaN(w)) this.filterWs = w;
-        }
-        if (params.has('vat') && this.selectedId === null) {
-          const v = parseInt(params.get('vat'), 10);
-          if (!isNaN(v)) this.selectedId = v;
-        }
+        this.reconcileSelection();
       },
-      setFilter(id) {
-        this.filterWs = id;
-        const still = this.filteredVats().some(v => v.id === this.selectedId);
-        if (!still) this.selectedId = null;
+      setFilter(kind, value) {
+        if (kind === 'ws') this.filterWs = value;
+        else if (kind === 'dye') this.filterDye = value;
+        else if (kind === 'status') this.filterStatus = value;
+        this.refreshStrip();
+      },
+      filterParams() {
+        const p = new URLSearchParams();
+        if (this.filterWs !== null) p.set('workshop', this.filterWs);
+        if (this.filterDye !== null) p.set('dye', this.filterDye);
+        if (this.filterStatus !== null) p.set('status', this.filterStatus);
+        return p;
+      },
+      syncUrl() {
         const url = new URL(window.location.href);
-        if (id === null) url.searchParams.delete('workshop');
-        else url.searchParams.set('workshop', id);
-        if (this.selectedId) url.searchParams.set('vat', this.selectedId);
-        else url.searchParams.delete('vat');
+        ['workshop', 'dye', 'status', 'vat'].forEach(k => url.searchParams.delete(k));
+        this.filterParams().forEach((v, k) => url.searchParams.set(k, v));
+        if (this.selectedId !== null) url.searchParams.set('vat', this.selectedId);
         history.replaceState(null, '', url.pathname + url.search);
       },
-      filteredVats() {
-        if (this.filterWs === null) return this.vats;
-        return this.vats.filter(v => v.workshopId === this.filterWs);
+      async refreshStrip() {
+        // 局部刷新：只换缸位条，对账四项不动
+        this.syncUrl();
+        const qs = this.filterParams().toString();
+        try {
+          const resp = await fetch('/bay/vats' + (qs ? '?' + qs : ''), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          });
+          if (!resp.ok) return;
+          document.getElementById('vat-strip').innerHTML = await resp.text();
+        } catch (e) {
+          return;
+        }
+        this.reconcileSelection();
+      },
+      visibleIds() {
+        return Array.from(document.querySelectorAll('#vat-strip [data-vat-id]'))
+          .map(el => parseInt(el.dataset.vatId, 10));
+      },
+      reconcileSelection() {
+        if (this.selectedId === null) return;
+        if (!this.visibleIds().includes(this.selectedId)) {
+          this.selectedId = null;
+          this.syncUrl();
+        }
       },
       toggle(id) {
         this.selectedId = this.selectedId === id ? null : id;
-        const url = new URL(window.location.href);
-        if (this.selectedId) url.searchParams.set('vat', this.selectedId);
-        else url.searchParams.delete('vat');
-        if (this.filterWs !== null) url.searchParams.set('workshop', this.filterWs);
-        history.replaceState(null, '', url.pathname + url.search);
+        this.syncUrl();
       },
       selected() {
         return this.vats.find(v => v.id === this.selectedId) || null;
