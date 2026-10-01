@@ -1,0 +1,64 @@
+{# 整页 GET / 与局部 GET /bay/partial 共用的唯一片段：
+   对账条（无筛全库实时值）+ 当前筛选下可见缸位。
+   可见卡片为纯 Jinja 静态渲染；选中态/展开面板由外层 Alpine 接管。 #}
+<div id="bay-results">
+  <section class="recon-bar" aria-label="全库对账">
+    <div class="recon-item">
+      <span class="num" data-recon="total">{{ reconcile.total_vats }}</span>
+      <span class="cap">全库缸数</span>
+    </div>
+    <div class="recon-item reducing">
+      <span class="num" data-recon="reducing">{{ reconcile.reducing_vats }}</span>
+      <span class="cap">还原中数</span>
+    </div>
+    <div class="recon-item ready">
+      <span class="num" data-recon="ready">{{ reconcile.ready_vats }}</span>
+      <span class="cap">可染色数</span>
+    </div>
+    <div class="recon-item">
+      <span class="num" data-recon="lots-today">{{ reconcile.lots_today }}</span>
+      <span class="cap">当日浸染笔数</span>
+    </div>
+  </section>
+
+  <div class="bay-scroll" role="list">
+    {% for v in vats %}
+    <button
+      type="button"
+      class="vat-card st-{{ v.status }}{% if selected_vat == v.id %} selected{% endif %}"
+      data-vat-id="{{ v.id }}"
+      role="listitem"
+    >
+      <div class="code">{{ v.code }}</div>
+      <div class="meta">{{ v.workshopName }} · {{ v.dyeType }}</div>
+      <div class="status-label">
+        <span class="status-dot"></span>
+        <span>{{ v.statusLabel }}</span>
+      </div>
+      <svg class="spark" width="72" height="28" viewBox="0 0 72 28" aria-hidden="true">
+        {% if v.spark %}
+        <polyline
+          fill="none"
+          stroke="#9fd4c8"
+          stroke-width="1.6"
+          stroke-linejoin="round"
+          stroke-linecap="round"
+          points="{% for p in v.spark %}{{ p.x }},{{ p.y }} {% endfor %}"
+        ></polyline>
+        {% else %}
+        <line
+          x1="4" y1="14" x2="68" y2="14"
+          stroke="rgba(216,235,232,0.35)"
+          stroke-width="1"
+          stroke-dasharray="3 3"
+        ></line>
+        {% endif %}
+      </svg>
+      <div class="mv{% if v.lastRedox is none %} empty{% endif %}">
+        {% if v.lastRedox is not none %}{{ v.lastRedox }} mV{% else %}尚无电位{% endif %}
+      </div>
+    </button>
+    {% endfor %}
+  </div>
+  <p class="empty-bay"{% if vats %} hidden{% endif %}>当前筛选条件下暂无染缸。</p>
+</div>

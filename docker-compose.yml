@@ -9,12 +9,13 @@ services:
       - "6430:5432"
     volumes:
       - indigovat_5030_6430_pg:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U indigovat -d indigovat"]
-      interval: 5s
-      timeout: 5s
-      retries: 36
-      start_period: 90s
+    # 首次 initdb 时频繁 healthcheck 会卡住临时库关停，故改为仅等容器启动
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready -U indigovat -d indigovat"]
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 36
+    #   start_period: 90s
 
   web:
     build: .
@@ -28,8 +29,7 @@ services:
       POSTGRES_PASSWORD: indigovat
       SESSION_SECRET: "dev-indigovat-session-secret"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
 
 volumes:
   indigovat_5030_6430_pg:
